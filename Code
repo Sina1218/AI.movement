@@ -1,0 +1,48 @@
+import cv2
+import mediapipe as mp
+
+# تنظیمات Mediapipe برای تشخیص دست و بدن
+mp_drawing = mp.solutions.drawing_utils
+mp_hands = mp.solutions.hands
+mp_pose = mp.solutions.pose
+
+# آغاز وب‌کم
+cap = cv2.VideoCapture(0)
+
+# راه‌اندازی تکنیک‌های دست و بدن
+with mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5) as hands, \
+     mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+    
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # تبدیل رنگ BGR به RGB
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb.flags.writeable = False
+
+        # پردازش دست‌ها
+        hand_results = hands.process(frame_rgb)
+
+        # پردازش بدن
+        pose_results = pose.process(frame_rgb)
+
+        # رسم نقاط کلیدی بدن
+        if pose_results.pose_landmarks:
+            mp_drawing.draw_landmarks(frame, pose_results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        # رسم نقاط کلیدی دست‌ها
+        if hand_results.multi_hand_landmarks:
+            for hand_landmarks in hand_results.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+        # نمایش ویدیو
+        cv2.imshow("Hand and Body Detection", frame)
+
+        if cv2.waitKey(5) & 0xFF == ord('q'):
+            break
+
+# آزادسازی منابع
+cap.release()
+cv2.destroyAllWindows()
